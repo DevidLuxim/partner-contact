@@ -34,14 +34,52 @@ class ResPartner(models.Model):
         if result.name != '---':
             res['name'] = result.name.upper()
         # Update partner address if listed on VIES
-        if result.address != '---':
-            res['street'] = \
-                result.address.replace('\n', ' ').replace('\r', '').title()
-        # Get country by country code
         country = self.env['res.country'].search(
             [('code', 'ilike', vat_country)])
         if country:
             res['country_id'] = country[0].id
+        if result.address != '---':
+            strng = \
+                 result.address.replace('\n', ' ').replace('\r', '').title()
+            if res['country_id'] ==110:
+                strng = \
+                    result.address.title()
+                SubstrngEnd =strng.find('\n')
+                res['street'] = strng[:SubstrngEnd]
+                strng = strng[SubstrngEnd:]
+                res['zip'] =strng[:6]
+                strng = strng [7:]
+                res['street2'] = None
+                res['city'] = strng [: len(strng)-4]
+            else:
+                if res['country_id'] ==201 and (strng.count(',') == 0 or strng.count(',') > 2):
+                    res['street'] = strng
+                    res['zip'] = None
+                    res['city'] = None
+                    res['street2'] = None
+                elif strng.count(',') == 1:
+                    SubstrngEnd = strng.find(',')
+                    res['street'] = strng[:SubstrngEnd]
+                    strng = strng[SubstrngEnd + 2:]
+                    SubstrngEnd = strng.find(' ')
+                    res['street2'] = None
+                    res['zip'] = strng[:SubstrngEnd]
+                    res['city'] = strng[SubstrngEnd + 1:]
+                elif strng.count(',') == 2:
+                    SubstrngEnd = strng.find(',')
+                    res['street'] = strng[:SubstrngEnd]
+                    strng = strng[SubstrngEnd + 2:]
+                    SubstrngEnd = strng.find(',')
+                    res['street2'] = strng[:SubstrngEnd]
+                    strng = strng[SubstrngEnd + 2:]
+                    SubstrngEnd = strng.find(' ')
+                    res['zip'] = strng[:SubstrngEnd]
+                    res['city'] = strng[SubstrngEnd + 1:]
+                    if res['street2'] == res['city']:
+                        res['street2'] = None
+
+                # konec unesene kode
+                # Get country by country code
         return res
 
     @api.multi
